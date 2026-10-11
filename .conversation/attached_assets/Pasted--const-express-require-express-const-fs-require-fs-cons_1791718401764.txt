@@ -1,0 +1,210 @@
+
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+const DATA_FILE = path.join(__dirname, "skilltank-data.json");
+
+function loadData() {
+  if (!fs.existsSync(DATA_FILE)) {
+    const initialData = {
+      profile: {
+        name: "",
+        branch: "CSE",
+        year: "3rd Year",
+        interests: []
+      },
+      tasks: [],
+      savedProjects: [],
+      internships: []
+    };
+
+    fs.writeFileSync(
+      DATA_FILE,
+      JSON.stringify(initialData, null, 2)
+    );
+  }
+
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+}
+
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "SkillTank server is running!"
+  });
+});
+
+app.get("/api/dashboard", (req, res) => {
+  const data = loadData();
+
+  res.json({
+    profile: data.profile,
+    totalTasks: data.tasks.length,
+    completedTasks: data.tasks.filter(task => task.completed).length,
+    savedProjects: data.savedProjects.length,
+    internships: data.internships.length
+  });
+});
+
+app.get("/api/profile", (req, res) => {
+  res.json(loadData().profile);
+});
+
+app.post("/api/profile", (req, res) => {
+  const data = loadData();
+
+  data.profile = {
+    ...data.profile,
+    ...req.body
+  };
+
+  saveData(data);
+  res.json({ success: true, profile: data.profile });
+});
+
+app.get("/api/tasks", (req, res) => {
+  res.json(loadData().tasks);
+});
+
+app.post("/api/tasks", (req, res) => {
+  const data = loadData();
+
+  const task = {
+    id: Date.now().toString(),
+    title: String(req.body.title || "").trim(),
+    category: String(req.body.category || "Learning"),
+    completed: false
+  };
+
+  if (!task.title) {
+    return res.status(400).json({ error: "Task title is required" });
+  }
+
+  data.tasks.push(task);
+  saveData(data);
+
+  res.status(201).json(task);
+});
+
+app.patch("/api/tasks/:id", (req, res) => {
+  const data = loadData();
+  const task = data.tasks.find(item => item.id === req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  task.completed = Boolean(req.body.completed);
+  saveData(data);
+
+  res.json(task);
+});
+
+app.delete("/api/tasks/:id", (req, res) => {
+  const data = loadData();
+  data.tasks = data.tasks.filter(item => item.id !== req.params.id);
+  saveData(data);
+
+  res.json({ success: true });
+});
+
+app.get("/api/projects", (req, res) => {
+  res.json([
+    {
+      id: "p1",
+      title: "Student Placement Tracker",
+      skills: ["JavaScript", "Node.js", "Database"],
+      level: "Beginner",
+      description: "Track placement preparation, skills and progress."
+    },
+    {
+      id: "p2",
+      title: "AI Mock Interview Practice",
+      skills: ["Python", "AI", "Communication"],
+      level: "Intermediate",
+      description: "Practice interview questions and record your answers."
+    },
+    {
+      id: "p3",
+      title: "Online Book Management System",
+      skills: ["Java", "Database", "Web Development"],
+      level: "Beginner",
+      description: "Manage books, searches and borrowing records."
+    },
+    {
+      id: "p4",
+      title: "Student Skill Roadmap",
+      skills: ["HTML", "CSS", "JavaScript"],
+      level: "Beginner",
+      description: "Plan learning goals and monitor completed tasks."
+    }
+  ]);
+});
+
+app.get("/api/saved-projects", (req, res) => {
+  res.json(loadData().savedProjects);
+});
+
+app.post("/api/saved-projects", (req, res) => {
+  const data = loadData();
+  const projectId = String(req.body.projectId || "");
+
+  if (!projectId) {
+    return res.status(400).json({ error: "Project ID is required" });
+  }
+
+  if (!data.savedProjects.includes(projectId)) {
+    data.savedProjects.push(projectId);
+  }
+
+  saveData(data);
+  res.json({ success: true, savedProjects: data.savedProjects });
+});
+
+app.get("/api/internships", (req, res) => {
+  res.json([
+    {
+      id: "i1",
+      title: "Web Development Intern",
+      company: "Sample Company",
+      skills: ["HTML", "CSS", "JavaScript"],
+      type: "Internship",
+      note: "Sample listing for demonstration"
+    },
+    {
+      id: "i2",
+      title: "Python Intern",
+      company: "Demo Tech",
+      skills: ["Python", "Problem Solving"],
+      type: "Internship",
+      note: "Sample listing for demonstration"
+    },
+    {
+      id: "i3",
+      title: "Software Trainee",
+      company: "Example Solutions",
+      skills: ["Java", "SQL", "DSA"],
+      type: "Entry Level",
+      note: "Sample listing for demonstration"
+    }
+  ]);
+});
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`SkillTank running on port ${PORT}`);
+});

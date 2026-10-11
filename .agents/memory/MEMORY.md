@@ -1,0 +1,1 @@
+- [SkillTank data ownership](skilltank-data-ownership.md) — the initial dashboard is a shared no-login workspace; add per-student ownership before multi-user use.

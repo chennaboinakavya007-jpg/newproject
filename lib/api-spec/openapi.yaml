@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for the SkillTank student learning dashboard
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Student progress overview
+  - name: profile
+    description: Student profile
+  - name: tasks
+    description: Learning tasks
+  - name: projects
+    description: Project ideas and saved projects
+  - name: internships
+    description: Sample internship listings
 paths:
   /healthz:
     get:
@@ -24,7 +34,215 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Student dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the student profile
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update the student profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Updated student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+  /tasks:
+    get:
+      operationId: getTasks
+      tags: [tasks]
+      summary: List learning tasks
+      responses:
+        "200":
+          description: Learning tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a learning task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created learning task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a learning task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated learning task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a learning task
+      responses:
+        "200":
+          description: Deletion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationStatus"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /projects:
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: List sample project ideas
+      responses:
+        "200":
+          description: Project ideas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+  /saved-projects:
+    get:
+      operationId: getSavedProjects
+      tags: [projects]
+      summary: List saved project ideas
+      responses:
+        "200":
+          description: Saved project ideas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedProject"
+    post:
+      operationId: saveProject
+      tags: [projects]
+      summary: Save a project idea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedProjectInput"
+      responses:
+        "201":
+          description: Saved project idea
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedProject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /saved-projects/{projectId}:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      operationId: removeSavedProject
+      tags: [projects]
+      summary: Remove a saved project idea
+      responses:
+        "200":
+          description: Deletion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationStatus"
+  /internships:
+    get:
+      operationId: getInternships
+      tags: [internships]
+      summary: List sample internship opportunities
+      responses:
+        "200":
+          description: Sample internship opportunities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Internship"
 components:
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +251,167 @@ components:
           type: string
       required:
         - status
+    Profile:
+      type: object
+      properties:
+        name:
+          type: string
+        branch:
+          type: string
+        year:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+      required: [name, branch, year, interests]
+    ProfileInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        branch:
+          type: string
+          maxLength: 80
+        year:
+          type: string
+          maxLength: 40
+        interests:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 60
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          type: string
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, category, completed, createdAt]
+    TaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        category:
+          type: string
+          maxLength: 80
+      required: [title]
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        category:
+          type: string
+          maxLength: 80
+        completed:
+          type: boolean
+    DashboardSummary:
+      type: object
+      properties:
+        profile:
+          $ref: "#/components/schemas/Profile"
+        totalTasks:
+          type: integer
+        completedTasks:
+          type: integer
+        activeTasks:
+          type: integer
+        savedProjects:
+          type: integer
+        internshipCount:
+          type: integer
+        completionRate:
+          type: integer
+        recentTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+      required:
+        - profile
+        - totalTasks
+        - completedTasks
+        - activeTasks
+        - savedProjects
+        - internshipCount
+        - completionRate
+        - recentTasks
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        level:
+          type: string
+        description:
+          type: string
+      required: [id, title, skills, level, description]
+    SavedProject:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          properties:
+            savedAt:
+              type: string
+              format: date-time
+          required: [savedAt]
+    SavedProjectInput:
+      type: object
+      properties:
+        projectId:
+          type: string
+          minLength: 1
+      required: [projectId]
+    Internship:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+        note:
+          type: string
+      required: [id, title, company, skills, type, note]
+    MutationStatus:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
 
